@@ -11,7 +11,7 @@ import {
 const VIEW_TYPE_CURRENT_FOLDER_PANEL = "current-folder-panel-view";
 
 export default class CurrentFolderPanelPlugin extends Plugin {
-  async onload() {
+  onload() {
     this.registerView(
       VIEW_TYPE_CURRENT_FOLDER_PANEL,
       (leaf) => new CurrentFolderPanelView(leaf, this)
@@ -22,7 +22,7 @@ export default class CurrentFolderPanelPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "show-current-folder-panel",
+      id: "show-panel",
       name: "显示当前目录面板",
       callback: () => {
         void this.activateView();
@@ -60,10 +60,6 @@ export default class CurrentFolderPanelPlugin extends Plugin {
     );
   }
 
-  onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_CURRENT_FOLDER_PANEL);
-  }
-
   async activateView() {
     const activeFile = this.app.workspace.getActiveFile();
 
@@ -89,7 +85,7 @@ export default class CurrentFolderPanelPlugin extends Plugin {
     }
 
     this.app.workspace.revealLeaf(leaf);
-    this.refreshViews();
+    void this.refreshViews();
   }
 
   refreshViews() {
@@ -97,7 +93,7 @@ export default class CurrentFolderPanelPlugin extends Plugin {
       const view = leaf.view;
 
       if (view instanceof CurrentFolderPanelView) {
-        void view.render();
+        view.render();
       }
     }
   }
@@ -117,18 +113,19 @@ class CurrentFolderPanelView extends ItemView {
   }
 
   getDisplayText() {
-    return "Current Folder Panel";
+    return "Current folder panel";
   }
 
   getIcon() {
     return "folder-open";
   }
 
-  async onOpen() {
-    await this.render();
+  onOpen(): Promise<void> {
+    this.render();
+    return Promise.resolve();
   }
 
-  async render() {
+  render() {
     const { containerEl } = this;
     containerEl.empty();
 
@@ -290,17 +287,17 @@ class CurrentFolderPanelView extends ItemView {
       text: file.name
     });
 
-    titleEl.addEventListener("click", async () => {
-      await this.plugin.app.workspace.openLinkText(file.path, "", false);
+    titleEl.addEventListener("click", () => {
+      void this.plugin.app.workspace.openLinkText(file.path, "", false);
     });
 
-    titleEl.addEventListener("keydown", async (event) => {
+    titleEl.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") {
         return;
       }
 
       event.preventDefault();
-      await this.plugin.app.workspace.openLinkText(file.path, "", false);
+      void this.plugin.app.workspace.openLinkText(file.path, "", false);
     });
 
     titleEl.tabIndex = 0;
@@ -314,7 +311,7 @@ class CurrentFolderPanelView extends ItemView {
       this.expandedFolderPaths.add(path);
     }
 
-    void this.render();
+    this.render();
   }
 
   private scrollActiveFileIntoView(activeFile: TFile) {
