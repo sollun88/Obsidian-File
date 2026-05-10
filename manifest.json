@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "Show files from the active file's current folder in a right sidebar panel.",
-  "author": "",
-  "authorUrl": "",
+  "author": "sollun88",
+  "authorUrl": "https://github.com/sollun88",
   "isDesktopOnly": false
 }
