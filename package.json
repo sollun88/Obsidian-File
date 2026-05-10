@@ -1,0 +1,24 @@
+{
+  "name": "obsidian-current-folder-panel",
+  "version": "0.1.0",
+  "description": "An Obsidian plugin that shows files from the active file's current folder in a right sidebar panel.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "current-folder"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.23.0",
+    "obsidian": "^1.5.12",
+    "typescript": "^5.4.5"
+  }
+}
