@@ -128,3 +128,8 @@
   font-size: var(--font-ui-small);
   padding: var(--size-4-4);
 }
+
+.workspace-leaf-content[data-type="current-folder-panel-view"] .view-action.is-active {
+  background-color: var(--background-modifier-active-hover);
+  color: var(--text-accent);
+}

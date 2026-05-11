@@ -9,6 +9,29 @@ import {
 } from "obsidian";
 
 const VIEW_TYPE_CURRENT_FOLDER_PANEL = "current-folder-panel-view";
+type FilterMode = "all" | "unsupported";
+
+const OBSIDIAN_SUPPORTED_EXTENSIONS = new Set([
+  "avif",
+  "bmp",
+  "canvas",
+  "flac",
+  "gif",
+  "jpeg",
+  "jpg",
+  "m4a",
+  "md",
+  "mov",
+  "mp3",
+  "mp4",
+  "ogg",
+  "pdf",
+  "png",
+  "svg",
+  "wav",
+  "webm",
+  "webp"
+]);
 
 export default class CurrentFolderPanelPlugin extends Plugin {
   onload() {
@@ -102,6 +125,8 @@ export default class CurrentFolderPanelPlugin extends Plugin {
 class CurrentFolderPanelView extends ItemView {
   private readonly plugin: CurrentFolderPanelPlugin;
   private readonly expandedFolderPaths = new Set<string>();
+  private filterActionEl: HTMLElement | null = null;
+  private filterMode: FilterMode = "all";
 
   constructor(leaf: WorkspaceLeaf, plugin: CurrentFolderPanelPlugin) {
     super(leaf);
@@ -121,6 +146,13 @@ class CurrentFolderPanelView extends ItemView {
   }
 
   onOpen(): Promise<void> {
+    if (!this.filterActionEl) {
+      this.filterActionEl = this.addAction("list-filter", "显示不支持的文件", () => {
+        this.toggleFilterMode();
+      });
+    }
+
+    this.updateFilterAction();
     this.render();
     return Promise.resolve();
   }
@@ -146,12 +178,15 @@ class CurrentFolderPanelView extends ItemView {
 
     this.expandedFolderPaths.add(folder.path);
 
-    const children = this.getSortedChildren(folder);
-    const fileCount = this.getFolderFileCount(folder);
+    const children = this.getVisibleChildren(folder);
+    const fileCount = this.getVisibleFileCount(folder);
     this.renderHeader(rootEl, folder, fileCount);
 
     if (children.length === 0) {
-      this.renderEmpty(rootEl, "当前目录无文件");
+      this.renderEmpty(
+        rootEl,
+        this.filterMode === "all" ? "当前目录无文件" : "当前目录无 Obsidian 不支持的文件"
+      );
       return;
     }
 
@@ -181,8 +216,28 @@ class CurrentFolderPanelView extends ItemView {
       });
   }
 
-  private getFolderFileCount(folder: TFolder) {
-    return folder.children.filter((child) => child instanceof TFile).length;
+  private getVisibleChildren(folder: TFolder) {
+    const children = this.getSortedChildren(folder);
+
+    if (this.filterMode === "all") {
+      return children;
+    }
+
+    return children.filter((child) => {
+      if (child instanceof TFile) {
+        return !this.isObsidianSupportedFile(child);
+      }
+
+      return this.hasVisibleDescendant(child);
+    });
+  }
+
+  private getVisibleFileCount(folder: TFolder) {
+    if (this.filterMode === "all") {
+      return this.getVisibleChildren(folder).filter((child) => child instanceof TFile).length;
+    }
+
+    return this.countUnsupportedFiles(folder);
   }
 
   private renderHeader(rootEl: HTMLElement, folder: TFolder, count: number) {
@@ -196,12 +251,15 @@ class CurrentFolderPanelView extends ItemView {
 
     titleRowEl.createDiv({
       cls: "current-folder-panel__count",
-      text: `${count} 个文件`
+      text: this.filterMode === "all" ? `${count} 个文件` : `${count} 个不支持`
     });
 
     headerEl.createDiv({
       cls: "current-folder-panel__path",
-      text: this.getFolderPath(folder)
+      text:
+        this.filterMode === "all"
+          ? this.getFolderPath(folder)
+          : `${this.getFolderPath(folder)} · 仅显示 Obsidian 不支持的文件`
     });
   }
 
@@ -262,7 +320,7 @@ class CurrentFolderPanelView extends ItemView {
       return;
     }
 
-    for (const child of this.getSortedChildren(folder)) {
+    for (const child of this.getVisibleChildren(folder)) {
       this.renderChild(childrenEl, child, activeFile);
     }
   }
@@ -312,6 +370,49 @@ class CurrentFolderPanelView extends ItemView {
     }
 
     this.render();
+  }
+
+  private toggleFilterMode() {
+    this.filterMode = this.filterMode === "all" ? "unsupported" : "all";
+    this.updateFilterAction();
+    this.render();
+  }
+
+  private updateFilterAction() {
+    if (!this.filterActionEl) {
+      return;
+    }
+
+    const isUnsupportedMode = this.filterMode === "unsupported";
+    const title = isUnsupportedMode ? "显示全部文件" : "显示不支持的文件";
+
+    this.filterActionEl.toggleClass("is-active", isUnsupportedMode);
+    this.filterActionEl.setAttr("aria-label", title);
+    this.filterActionEl.setAttr("title", title);
+  }
+
+  private hasVisibleDescendant(folder: TFolder): boolean {
+    return this.getSortedChildren(folder).some((child) => {
+      if (child instanceof TFile) {
+        return !this.isObsidianSupportedFile(child);
+      }
+
+      return this.hasVisibleDescendant(child);
+    });
+  }
+
+  private isObsidianSupportedFile(file: TFile) {
+    return OBSIDIAN_SUPPORTED_EXTENSIONS.has(file.extension.toLowerCase());
+  }
+
+  private countUnsupportedFiles(folder: TFolder): number {
+    return this.getSortedChildren(folder).reduce((count, child) => {
+      if (child instanceof TFile) {
+        return this.isObsidianSupportedFile(child) ? count : count + 1;
+      }
+
+      return count + this.countUnsupportedFiles(child);
+    }, 0);
   }
 
   private scrollActiveFileIntoView(activeFile: TFile) {
