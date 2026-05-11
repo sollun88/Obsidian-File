@@ -31,6 +31,16 @@
   white-space: nowrap;
 }
 
+.current-folder-panel__filter-action {
+  flex: 0 0 auto;
+  margin-inline-start: var(--size-2-2);
+}
+
+.current-folder-panel__filter-action.is-active {
+  background-color: var(--background-modifier-active-hover);
+  color: var(--text-accent);
+}
+
 .current-folder-panel__path {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
@@ -127,9 +137,4 @@
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   padding: var(--size-4-4);
-}
-
-.workspace-leaf-content[data-type="current-folder-panel-view"] .view-action.is-active {
-  background-color: var(--background-modifier-active-hover);
-  color: var(--text-accent);
 }

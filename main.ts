@@ -146,13 +146,6 @@ class CurrentFolderPanelView extends ItemView {
   }
 
   onOpen(): Promise<void> {
-    if (!this.filterActionEl) {
-      this.filterActionEl = this.addAction("list-filter", "显示不支持的文件", () => {
-        this.toggleFilterMode();
-      });
-    }
-
-    this.updateFilterAction();
     this.render();
     return Promise.resolve();
   }
@@ -253,6 +246,18 @@ class CurrentFolderPanelView extends ItemView {
       cls: "current-folder-panel__count",
       text: this.filterMode === "all" ? `${count} 个文件` : `${count} 个不支持`
     });
+
+    this.filterActionEl = titleRowEl.createEl("button", {
+      cls: "clickable-icon current-folder-panel__filter-action",
+      attr: {
+        type: "button"
+      }
+    });
+    setIcon(this.filterActionEl, "list-filter");
+    this.filterActionEl.addEventListener("click", () => {
+      this.toggleFilterMode();
+    });
+    this.updateFilterAction();
 
     headerEl.createDiv({
       cls: "current-folder-panel__path",

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-current-folder-panel",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "An Obsidian plugin that shows files from the active file's current folder in a right sidebar panel.",
   "main": "main.js",
   "scripts": {
