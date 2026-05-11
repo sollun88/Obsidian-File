@@ -84,8 +84,8 @@ export default class CurrentFolderPanelPlugin extends Plugin {
       });
     }
 
-    this.app.workspace.revealLeaf(leaf);
-    void this.refreshViews();
+    await this.app.workspace.revealLeaf(leaf);
+    this.refreshViews();
   }
 
   refreshViews() {
