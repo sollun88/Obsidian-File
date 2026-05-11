@@ -244,7 +244,7 @@ class CurrentFolderPanelView extends ItemView {
 
     titleRowEl.createDiv({
       cls: "current-folder-panel__count",
-      text: this.filterMode === "all" ? `${count} 个文件` : `${count} 个不支持`
+      text: `${count} 个文件`
     });
 
     this.filterActionEl = titleRowEl.createEl("button", {

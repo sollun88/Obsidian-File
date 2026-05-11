@@ -1,7 +1,7 @@
 {
   "id": "current-folder-panel",
   "name": "Current Folder Panel",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "minAppVersion": "1.5.0",
   "description": "Show files from the active file's current folder in a right sidebar panel.",
   "author": "sollun88",
