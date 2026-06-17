@@ -1,6 +1,8 @@
 import {
   ItemView,
   Notice,
+  FileSystemAdapter,
+  Platform,
   Plugin,
   TFile,
   TFolder,
@@ -227,7 +229,7 @@ class CurrentFolderPanelView extends ItemView {
 
   private getVisibleFileCount(folder: TFolder) {
     if (this.filterMode === "all") {
-      return this.getVisibleChildren(folder).filter((child) => child instanceof TFile).length;
+      return this.countFiles(folder);
     }
 
     return this.countUnsupportedFiles(folder);
@@ -237,9 +239,29 @@ class CurrentFolderPanelView extends ItemView {
     const headerEl = rootEl.createDiv({ cls: "current-folder-panel__header" });
     const titleRowEl = headerEl.createDiv({ cls: "current-folder-panel__title-row" });
 
-    titleRowEl.createDiv({
-      cls: "current-folder-panel__title",
-      text: `当前目录：${this.getFolderName(folder)}`
+    const folderPath = this.getFolderPath(folder);
+    const pathLinkEl = titleRowEl.createDiv({
+      cls: "current-folder-panel__path current-folder-panel__path-link",
+      text: this.filterMode === "all" ? folderPath : `${folderPath} · 仅显示 Obsidian 不支持的文件`,
+      attr: {
+        role: "button",
+        tabindex: "0",
+        title: `在 Finder 中打开 ${folderPath}`
+      }
+    });
+
+    pathLinkEl.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      void this.openFolderInSystem(folder);
+    });
+
+    pathLinkEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      void this.openFolderInSystem(folder);
     });
 
     titleRowEl.createDiv({
@@ -258,14 +280,6 @@ class CurrentFolderPanelView extends ItemView {
       this.toggleFilterMode();
     });
     this.updateFilterAction();
-
-    headerEl.createDiv({
-      cls: "current-folder-panel__path",
-      text:
-        this.filterMode === "all"
-          ? this.getFolderPath(folder)
-          : `${this.getFolderPath(folder)} · 仅显示 Obsidian 不支持的文件`
-    });
   }
 
   private renderChild(parentEl: HTMLElement, child: TFile | TFolder, activeFile: TFile) {
@@ -418,6 +432,43 @@ class CurrentFolderPanelView extends ItemView {
 
       return count + this.countUnsupportedFiles(child);
     }, 0);
+  }
+
+  private countFiles(folder: TFolder): number {
+    return this.getSortedChildren(folder).reduce((count, child) => {
+      if (child instanceof TFile) {
+        return count + 1;
+      }
+
+      return count + this.countFiles(child);
+    }, 0);
+  }
+
+  private async openFolderInSystem(folder: TFolder) {
+    if (!Platform.isDesktopApp) {
+      new Notice("当前平台不支持打开系统文件夹");
+      return;
+    }
+
+    const adapter = this.app.vault.adapter;
+
+    if (!(adapter instanceof FileSystemAdapter)) {
+      new Notice("无法识别当前库的本地路径");
+      return;
+    }
+
+    const normalizedPath = folder.isRoot() ? "" : folder.path;
+    const fullPath = adapter.getFullPath(normalizedPath);
+    const electron = require("electron") as {
+      shell: {
+        openPath(path: string): Promise<string>;
+      };
+    };
+    const error = await electron.shell.openPath(fullPath);
+
+    if (error) {
+      new Notice(`无法打开文件夹：${error}`);
+    }
   }
 
   private scrollActiveFileIntoView(activeFile: TFile) {
